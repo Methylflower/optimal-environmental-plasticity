@@ -1,0 +1,71 @@
+#
+
+vals<- expand.grid(m11=c(-.2,0,.1,.3,.5), m12=c(-.2,0,.1,.3,.5), m21=c(-.2,0,.1,.3,.5), m22=c(-.2,0,.1,.3,.5), plastic=c(-.2,0,.1,.3,.5))   
+nor<-0
+dvec<- data.frame(F1=rep(0,nrow(vals)),F2=rep(0,nrow(vals)), Ftot=rep(0,nrow(vals)), F1res=rep(0,nrow(vals)),F2res=rep(0,nrow(vals)), Ftotres=rep(0,nrow(vals)))
+
+bestfittemp6 = data.frame(m11=rep(0,nrow(anse)),m12=rep(0,nrow(anse)),m21=rep(0,nrow(anse)),m22=rep(0,nrow(anse)),within=rep(0,nrow(anse)), m11res=rep(0,nrow(anse)),m12res=rep(0,nrow(anse)),m21res=rep(0,nrow(anse)),m22res=rep(0,nrow(anse)),withinres=rep(0,nrow(anse)))
+
+c(1:120)->years
+for(i in start:stop){
+  ea<-as.vector(t(anse[i,3:122]))
+  la<-as.vector(t(ansl[i,3:122]))
+  lm(ea ~ years)->elm
+  lm(la ~ years)->llm
+  elm$residuals->eres
+  llm$residuals->lres
+  mean(ea)->gmene
+  mean(la)->gmenl
+  difmeane<-(ea-gmene)
+  difmeanl<-(la-gmenl)
+  ea[2:120]->actual1
+  la[2:120]->actual2
+  eres[1:119]->reside
+  lres[1:119]->residl
+  eres[2:120]->actualrese
+  lres[2:120]->actualresl
+  for(j in 1:nrow(vals)){
+    nor<-nor+1
+    difmeane*vals[j,1]->m11e
+    difmeanl*vals[j,3]->m21e
+    m11e+m21e+gmene->pheno1
+    pheno1[1:119]->pheno1
+    (actual1-pheno1)->difpheno1
+    (abs(difpheno1)/20)->sp
+    (1-sp)->fitness1
+    pmax(fitness1, .2)->fitness1
+    exp(mean(log(fitness1)))->dvec[nor,1]
+    difmeane*vals[j,2]->m12l
+    difmeanl*vals[j,4]->m22l
+    m12l[1:119]->m12l
+    m22l[1:119]->m22l
+    gmenl+m12l+m22l+(difmeane[2:120]*vals[j,5])->pheno2
+    pheno2-actual2->difpheno2
+    (abs(difpheno2)/20)->sp2
+    (1-sp2)->fitness2
+    pmax(fitness2, .2)->fitness2
+    exp(mean(log(fitness2)))->dvec[nor,2]
+    reside*vals[j,1]->matres11
+    residl*vals[j,3]->matres21
+    (matres11+matres21-actualrese)->diferes
+    (abs(diferes)/20)->spres
+    (1-spres)->fitness1res
+    pmax(fitness1res, .2)->fitness1res
+    exp(mean(log(fitness1res)))->dvec[nor,4]
+    reside*vals[j,2]->matres12
+    residl*vals[j,4]->matres22
+    matres12+matres22+(actualrese*vals[j,5])->pheno2
+    (pheno2-actualresl)->dif2
+    (abs(dif2)/20)->spres2
+    (1-spres2)->fitness2res
+    pmax(fitness2res, .2)->fitness2res
+    exp(mean(log(fitness2res)))->dvec[nor,5]
+  }
+  dvec$F1*dvec$F2->dvec$Ftot
+  dvec$F1res*dvec$F2res->dvec$Ftotres
+  vals[row.names(dvec[dvec$Ftot==max(dvec$Ftot),]),]->bestfittemp6[i,1:5]
+  vals[row.names(dvec[dvec$Ftotres==max(dvec$Ftotres),]),]->bestfittemp6[i,6:10]
+  nor<-0
+}
+
+write.csv(bestfittemp6, file="BT_3.csv")
