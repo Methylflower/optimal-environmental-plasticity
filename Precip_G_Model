@@ -1,0 +1,55 @@
+#R code for Precipitation model identifying optimal maternal (m) and grandparental persistence (g) values given n (in this case: 120) years of climate data across x locations (in this case 170,000). 
+
+vals<- expand.grid(maternal=seq(-.6, .9, by = 0.1), gradpercent=seq(0, 1, by = 0.1))  
+nor<-0
+dvec<- data.frame(fitness=rep(0,nrow(vals)),fitnessres=rep(0,nrow(vals)))
+c(1:120)->years
+pb   <- txtProgressBar(1, 170000, style=1)
+
+bestprecip5 = data.frame(maternal=rep(0,nrow(ans)),grandpercent=rep(0,nrow(ans)),maternalres=rep(0,nrow(ans)),grandpercentres=rep(0,nrow(ans)))
+
+for(i in 1:170000){
+  Sys.sleep(0.00002)
+  if(i %% 1000 == 0){
+  setTxtProgressBar(pb, i)
+  }
+  xmark<-as.vector(t(ans[i,3:122]))
+  mean(xmark)->avprecip
+  difmeantot<-(xmark-avprecip)
+  lm(xmark ~ years)->elm
+  elm$residuals->preresid
+  xmark[4:120]->realprecip
+  preresid[4:120]->p2
+  for(j in 1:nrow(vals)){
+    nor<-nor+1
+    difmeantot*vals[j,1]->mateffect
+    difmeantot*vals[j,1]*vals[j,2]->granmateffect
+    difmeantot*vals[j,1]*vals[j,2]*vals[j,2]->ggranmateffect
+    mateffect[3:119]->matimpact
+    granmateffect[2:118]->granimpact
+    ggranmateffect[1:117]->ggranimpact
+    avprecip+((granimpact+matimpact+ggranimpact)/(1+vals[j,2]+(vals[j,2]*vals[j,2])))->difoneso
+    (realprecip-difoneso)->offprecip
+    (abs(offprecip)/avprecip)->sp
+    (1-sp)->fitness
+    pmax(fitness, .2)->fitness1
+    exp(mean(log(fitness1)))->dvec[nor,1]
+    preresid*vals[j,1]->mateffectres
+    preresid*vals[j,1]*vals[j,2]->granmateffectres
+    preresid*vals[j,1]*vals[j,2]*vals[j,2]->ggranmateffectres
+    mateffectres[3:119]->matimpactres
+    granmateffectres[2:118]->granimpactres
+    ggranmateffectres[1:117]->ggranimpactres
+    ((granimpactres+matimpactres+ggranimpactres)/(1+vals[j,2]+(vals[j,2]*vals[j,2])))->difoneres
+    p2-difoneres->offres
+    (abs(offres)/avprecip)->spres
+    (1-spres)->fitnessres
+    pmax(fitnessres, .2)->fitness1res
+    exp(mean(log(fitness1res)))->dvec[nor,2]
+  }
+  vals[row.names(dvec[dvec$fitness==max(dvec$fitness),]),]->bestprecip5[i,1:2]
+  vals[row.names(dvec[dvec$fitnessres==max(dvec$fitnessres),]),]->bestprecip5[i,3:4]
+  nor<-0
+}
+
+write.csv(bestprecip5, file="BP_1.csv")
